@@ -39,14 +39,14 @@ EV.sort((a, b) => a.m - b.m || a.k - b.k);
 
 // ---------- footnote / modal text ----------
 const periodTxt = `${fD(T0)} – ${fD(T1)}`;
-$("foot").textContent = `Live · ${periodTxt} · ${FULL.n} trades on ${FULL.pairs} Bitunix perps · start ${money(START,0)}, risk 1% (${money(META.risk,0)}) per trade, 0.06% taker fees both sides included · times Monaco.`;
+$("foot").textContent = `Strategy · ${periodTxt} · ${FULL.n} trades on ${FULL.pairs} Bitunix perps · start ${money(START,0)}, risk 1% (${money(META.risk,0)}) per trade, 0.06% taker fees both sides included · times Monaco.`;
 $("cPeriod").textContent = periodTxt; $("cStart").textContent = money(START, 0); $("cRisk").textContent = `1% · ${money(META.risk,0)} max loss`;
 
 // ---------- ticker ----------
 function renderTicker(list, live) {
   const html = list.map(x => { const ch = (x.p - x.o) / x.o * 100; const c = ch >= 0 ? "g" : "r";
     return `<span>${x.s.replace("USDT","")}/USDT <b>${px(x.p)}</b> <span class="${c}">${ch >= 0 ? "▲" : "▼"}${Math.abs(ch).toFixed(2)}%</span></span>`; }).join("");
-  const tag = `<span class="dim">BITUNIX LIVE</span>`;
+  const tag = `<span class="dim">BITUNIX</span>`;
   $("tickerTrack").innerHTML = tag + html + tag + html;
 }
 renderTicker(window.DP_TICKER, false);
@@ -54,7 +54,7 @@ renderTicker(window.DP_TICKER, false);
 
 // ---------- boot ----------
 const BOOT = [
-  ["$ ssh vip@degenplanet --mode=live", ""],
+  ["$ ssh vip@degenplanet --mode=strategy", ""],
   ["$ loading strategies…", ""],
   ["  ✓ HTF Trend Engine  [4H · 1H · 30M]", "ok"],
   ["  ✓ Range / Sideway   [fake-breakout]", "ok"],
@@ -131,7 +131,7 @@ function step(now) {
 }
 function setStatus() {
   $("dot").className = "dot" + (playing ? " on" : "");
-  $("statusTxt").textContent = playing ? "LIVE " + speed + "x" : (ei >= EV.length ? "DONE" : "PAUSED");
+  $("statusTxt").textContent = playing ? "RUN " + speed + "x" : (ei >= EV.length ? "DONE" : "PAUSED");
   $("btnPause").textContent = playing ? "❚❚" : "▶";
 }
 function ui() {

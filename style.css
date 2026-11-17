@@ -77,3 +77,4 @@ button,.big{font-family:inherit;background:#000;color:var(--g);border:1px solid 
 #boot{position:relative}
 @media (max-height:740px){.boot-logo{width:150px;height:150px}#chart{height:72px}}
 @media (max-height:680px){.equity{font-size:26px}#chart{height:64px}}
+.fn{font-size:7px;line-height:1.3;text-align:center;color:#2f4f3b;margin-top:1px;opacity:.75;padding:0 8px}
