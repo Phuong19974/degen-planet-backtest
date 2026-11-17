@@ -86,7 +86,7 @@ $("btnConnect").onclick = async () => {
   b.textContent = "CONNECTED ✓"; b.classList.add("done"); await sleep(800);
   $("connect").classList.remove("show"); showDash(); await sleep(500); start();
 };
-function showDash() { $("boot").classList.remove("active"); $("dash").classList.add("active"); resize(); draw(); }
+function showDash() { $("boot").classList.remove("active"); $("dash").classList.add("active"); resize(); draw(); drawLogChart(); }
 
 // ---------- replay state ----------
 const DUR = 36000; // ms at 1x
@@ -96,6 +96,7 @@ function reset() {
   S = { eq: START, pk: START, ddp: 0, n: 0, w: 0, open: 0, pts: [[T0, START]],
         st: { HTF: { n: 0, w: 0, p: new Set(), pnl: 0 }, RANGE: { n: 0, w: 0, p: new Set(), pnl: 0 } } };
   sim = T0; ei = 0; shown = START; $("log").innerHTML = ""; logN = 0; $("recap").classList.remove("show");
+  chartTrade = null; openStack = [];
 }
 let logN = 0;
 function log(html) {
@@ -108,8 +109,10 @@ function apply(e) {
     S.open++; c.p.add(t.s);
     const buy = t.sd === "LONG";
     log(`<span class="t">${fDT(t.tm)}</span> <span class="${buy ? "buy" : "sell"}">${buy ? "BUY " : "SELL"}</span> ${t.s} ${tfL(t.tf)} @${px(t.e)} <span class="dim">SL ${px(t.sl)}</span>`);
+    setLogTrade(t, true);
   } else {
     S.open--; S.n++; c.n++; c.pnl += t.pnl; if (t.pnl > 0) { S.w++; c.w++; }
+    setLogTrade(t, false);
     S.eq += t.pnl; S.pk = Math.max(S.pk, S.eq); S.ddp = Math.min(S.ddp, (S.eq - S.pk) / S.pk);
     S.pts.push([t.xm, S.eq]);
     const lab = { sl: ["SL  ✗", "sl"], breakeven: ["TP1 ✓ BE+", "be"], trailing: ["TP2 ✓ TRAIL", "tp"], tp2: ["TP2 ✓", "tp"], expiry: ["EXPIRY", "ex"] }[t.rs] || [t.rs, "ex"];
@@ -126,7 +129,7 @@ function step(now) {
   }
   shown += (S.eq - shown) * Math.min(1, dt / 160);
   if (Math.abs(S.eq - shown) < 0.5) shown = S.eq;
-  ui(); draw();
+  ui(); draw(); drawLogChart();
   raf = requestAnimationFrame(step);
 }
 function setStatus() {
@@ -152,10 +155,126 @@ function ui() {
   $("sOpen").textContent = S.open; $("sDD").textContent = (S.ddp * 100).toFixed(1) + "%";
   $("logcount").textContent = `${Math.round((Math.min(sim, T1) - T0) / (T1 - T0) * 100)}%`;
 }
+
+// ---------- decision-log candlestick (real prefetched OHLC only; never synthesize) ----------
+const KL_PACK = window.DP_KLINES || null;
+const KL = (KL_PACK && KL_PACK.k) || {};
+const KL_IV = (KL_PACK && KL_PACK.iv) || { "30m": 1800000, "1h": 3600000, "4h": 14400000 };
+const klCache = Object.create(null);
+function getSeries(sym, tf) {
+  const key = sym + "|" + tf;
+  if (key in klCache) return klCache[key];
+  const segs = KL[key];
+  klCache[key] = segs && segs.length ? { iv: KL_IV[tf], segs } : null;
+  return klCache[key];
+}
+let chartTrade = null, openStack = [];
+function setLogTrade(t, opening) {
+  if (opening) {
+    if (!getSeries(t.s, t.tf)) return; // hold previous chart
+    openStack.push(t);
+    chartTrade = t;
+    return;
+  }
+  openStack = openStack.filter(x => x !== t);
+  if (chartTrade !== t || !openStack.length) return;
+  for (let i = openStack.length - 1; i >= 0; i--) {
+    if (getSeries(openStack[i].s, openStack[i].tf)) { chartTrade = openStack[i]; return; }
+  }
+}
+const lcv = $("logChart"), lcx = lcv ? lcv.getContext("2d") : null;
+function candlesUntil(series, tEnd) {
+  const out = [], iv = series.iv;
+  for (const seg of series.segs) {
+    const t0 = seg[0], rows = seg[1];
+    for (let i = 0; i < rows.length; i++) {
+      const t = t0 + i * iv;
+      if (t > tEnd) return out;
+      const r = rows[i];
+      out.push({ t, o: r[0], h: r[1], l: r[2], c: r[3] });
+    }
+  }
+  return out;
+}
+function drawLogChart() {
+  if (!lcx) return;
+  const W = lcv.clientWidth, H = lcv.clientHeight;
+  lcx.clearRect(0, 0, W, H);
+  const meta = $("chartMeta");
+  const t = chartTrade;
+  if (!t) { if (meta) meta.textContent = ""; return; }
+  const series = getSeries(t.s, t.tf);
+  if (!series) { if (meta) meta.textContent = ""; return; }
+  const iv = series.iv;
+  const tRight = Math.min(sim, t.xm + 8 * iv);
+  const all = candlesUntil(series, tRight);
+  if (!all.length) return;
+  if (meta) meta.textContent = `${t.s} · ${tfL(t.tf)} · ${t.sd}`;
+  const padL = 2, padR = 34, padT = 3, padB = 3;
+  const maxVis = Math.max(20, Math.floor((W - padL - padR) / 4.5));
+  const vis = all.length > maxVis ? all.slice(-maxVis) : all;
+  let lo = Infinity, hi = -Infinity;
+  for (const c of vis) { lo = Math.min(lo, c.l); hi = Math.max(hi, c.h); }
+  lo = Math.min(lo, t.e, t.sl, t.xp);
+  hi = Math.max(hi, t.e, t.sl, t.xp);
+  const pad = (hi - lo) * 0.14 || Math.abs(hi) * 0.002 || 1e-8;
+  lo -= pad; hi += pad;
+  const n = vis.length, slot = (W - padL - padR) / n;
+  const X = i => padL + (i + 0.5) * slot;
+  const Y = p => padT + (hi - p) / (hi - lo) * (H - padT - padB);
+  lcx.strokeStyle = "rgba(0,255,102,.07)"; lcx.lineWidth = 1;
+  for (let i = 1; i < 3; i++) { lcx.beginPath(); lcx.moveTo(0, H * i / 3); lcx.lineTo(W, H * i / 3); lcx.stroke(); }
+  const hline = (price, color, dash, label) => {
+    const y = Y(price);
+    if (y < 0 || y > H) return;
+    lcx.save();
+    lcx.strokeStyle = color; lcx.lineWidth = 1; lcx.setLineDash(dash || []);
+    lcx.beginPath(); lcx.moveTo(padL, y); lcx.lineTo(W - padR + 2, y); lcx.stroke();
+    lcx.setLineDash([]); lcx.fillStyle = color;
+    lcx.font = "9px ui-monospace, Menlo, Consolas, monospace";
+    lcx.textBaseline = "middle"; lcx.textAlign = "left";
+    lcx.fillText(label, W - padR + 4, y);
+    lcx.restore();
+  };
+  hline(t.e, "rgba(232,255,232,.75)", [3, 3], "E");
+  hline(t.sl, "rgba(255,59,79,.95)", [], "SL");
+  if (Math.abs(t.xp - t.sl) > Math.max(Math.abs(t.sl), 1e-12) * 1e-8) {
+    hline(t.xp, "rgba(0,255,102,.95)", [], "TP");
+  }
+  for (let i = 0; i < n; i++) {
+    const c = vis[i], up = c.c >= c.o, col = up ? "#00ff66" : "#ff3b4f";
+    const x = X(i), hw = Math.max(0.6, slot * 0.32);
+    lcx.strokeStyle = col; lcx.fillStyle = col; lcx.lineWidth = 1;
+    lcx.beginPath(); lcx.moveTo(x, Y(c.h)); lcx.lineTo(x, Y(c.l)); lcx.stroke();
+    const y1 = Y(Math.max(c.o, c.c)), y2 = Y(Math.min(c.o, c.c));
+    lcx.fillRect(x - hw, y1, hw * 2, Math.max(1, y2 - y1));
+  }
+  const markAt = (ms, buy, closed) => {
+    const i = vis.findIndex(c => ms >= c.t && ms < c.t + iv);
+    if (i < 0) return;
+    const x = X(i), y = Y(buy ? vis[i].l : vis[i].h);
+    const dir = buy ? 1 : -1, s = 4.5;
+    lcx.beginPath();
+    lcx.moveTo(x, y + dir * 1);
+    lcx.lineTo(x - s, y + dir * (s + 3));
+    lcx.lineTo(x + s, y + dir * (s + 3));
+    lcx.closePath();
+    lcx.fillStyle = closed ? (buy ? "#00ff66" : "#ff3b4f") : (buy ? "#00ff66" : "#ff3b4f");
+    lcx.fill();
+  };
+  const isLong = t.sd === "LONG";
+  markAt(t.tm, isLong, false);
+  if (sim >= t.xm) markAt(t.xm, !isLong, true);
+}
+
 // chart
 const cv = $("chart"), cx = cv.getContext("2d");
-function resize() { const r = cv.getBoundingClientRect(), d = devicePixelRatio || 1; cv.width = r.width * d; cv.height = r.height * d; cx.setTransform(d, 0, 0, d, 0, 0); }
-addEventListener("resize", () => { resize(); draw(); });
+function resize() {
+  const d = devicePixelRatio || 1;
+  const r = cv.getBoundingClientRect(); cv.width = r.width * d; cv.height = r.height * d; cx.setTransform(d, 0, 0, d, 0, 0);
+  if (lcv) { const lr = lcv.getBoundingClientRect(); lcv.width = lr.width * d; lcv.height = lr.height * d; lcx.setTransform(d, 0, 0, d, 0, 0); }
+}
+addEventListener("resize", () => { resize(); draw(); drawLogChart(); });
 function draw() {
   if (!S) return; const W = cv.clientWidth, H = cv.clientHeight; cx.clearRect(0, 0, W, H);
   const pts = S.pts.concat([[Math.min(sim, T1), S.eq]]);
@@ -194,10 +313,10 @@ $("btnReplay").onclick = start; $("btnAgain").onclick = start;
 document.querySelectorAll(".speeds button").forEach(b => b.onclick = () => {
   speed = +b.dataset.s; document.querySelectorAll(".speeds button").forEach(x => x.classList.toggle("sel", x === b)); setStatus(); });
 // jump helper (used for screenshots / testing): ?screen=connect|dash|recap&at=0.6
-function jumpTo(frac) { reset(); sim = T0 + (T1 - T0) * frac; while (ei < EV.length && EV[ei].m <= sim) apply(EV[ei++]); shown = S.eq; playing = false; setStatus(); }
+function jumpTo(frac) { reset(); sim = T0 + (T1 - T0) * frac; while (ei < EV.length && EV[ei].m <= sim) apply(EV[ei++]); shown = S.eq; playing = false; setStatus(); draw(); drawLogChart(); }
 
 // CTA link: set JOIN_URL below, or pass ?join=https://t.me/yourchannel
-const JOIN_URL = qs.get("join") || "https://t.me/DegenPlanetVIP_bot";
+const JOIN_URL = qs.get("join") || "https://t.me/SignalVipdegen_Bot";
 if (JOIN_URL) { const c = $("cta"); c.href = JOIN_URL; c.target = "_blank"; c.removeAttribute("onclick"); }
 reset(); raf = requestAnimationFrame(step);
 const scr = qs.get("screen");
