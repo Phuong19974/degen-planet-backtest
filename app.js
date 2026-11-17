@@ -230,12 +230,7 @@ else { boot(false).then(() => sleep(500)).then(showConnect); }
     "audio/house-02.mp3",
     "audio/techno-fest-vibes.mp3"
   ];
-  const LS = "dp-music";
-  const btn = document.getElementById("btnMusic");
-  const icon = document.getElementById("musicIcon");
-  let audio = null, idx = 0, unlocked = false;
-
-  const wantOn = () => localStorage.getItem(LS) !== "0";
+  let audio = null, idx = 0;
 
   function ensureAudio() {
     if (audio) return audio;
@@ -250,56 +245,46 @@ else { boot(false).then(() => sleep(500)).then(showConnect); }
     audio.addEventListener("ended", () => {
       idx = (idx + 1) % TRACKS.length;
       audio.src = TRACKS[idx];
-      if (wantOn()) audio.play().catch(() => {});
+      playNow();
     });
-    audio.addEventListener("play", updateUI);
-    audio.addEventListener("pause", updateUI);
     return audio;
   }
 
-  function isPlaying() { return !!(audio && !audio.paused && !audio.ended); }
-
-  function updateUI() {
-    const on = isPlaying();
-    if (btn) btn.classList.toggle("on", on);
-    if (icon) icon.textContent = on ? "🔊" : "🔇";
-    if (btn) btn.setAttribute("aria-label", on ? "Mute music" : "Play music");
-  }
-
-  function startIfWanted() {
-    if (!wantOn()) { updateUI(); return; }
+  function playNow() {
     const a = ensureAudio();
+    a.muted = false;
+    a.volume = 0.4;
     const p = a.play();
-    if (p && p.catch) p.catch(() => updateUI());
-    updateUI();
+    if (p && p.catch) p.catch(() => {});
+    return p;
   }
 
-  function onFirstGesture(ev) {
-    if (unlocked) return;
-    if (ev && ev.target && ev.target.closest && ev.target.closest("#btnMusic")) return;
-    unlocked = true;
-    startIfWanted();
-  }
-
-  if (btn) btn.addEventListener("click", ev => {
-    ev.preventDefault();
-    ev.stopPropagation();
-    unlocked = true;
+  async function tryAutoplay() {
     const a = ensureAudio();
-    if (wantOn() && !a.paused) {
-      a.pause();
-      localStorage.setItem(LS, "0");
-    } else {
-      localStorage.setItem(LS, "1");
-      startIfWanted();
+    // Muted-then-unmute helps on some desktop browsers; iOS will still block until a gesture.
+    try {
+      a.muted = true;
+      a.volume = 0.4;
+      await a.play();
+      a.muted = false;
+      a.volume = 0.4;
+    } catch (e) {
+      a.muted = false;
+      a.volume = 0.4;
     }
-    updateUI();
+  }
+
+  function onGesture() { playNow(); }
+
+  ["touchstart", "pointerdown", "click", "scroll"].forEach(t =>
+    document.addEventListener(t, onGesture, { capture: true, passive: true }));
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") playNow();
   });
+  window.addEventListener("pageshow", playNow);
+  window.addEventListener("focus", playNow);
 
-  ["pointerdown", "touchstart", "click", "keydown"].forEach(t =>
-    document.addEventListener(t, onFirstGesture, { capture: true, passive: true }));
-
-  // Preload first track so the first tap can start immediately (iOS PWA).
-  ensureAudio();
-  updateUI();
+  try { localStorage.removeItem("dp-music"); } catch (e) {}
+  tryAutoplay();
 })();

@@ -18,7 +18,7 @@ body{display:flex;justify-content:center;overflow:hidden}
 #bootpct{font-size:12px}
 /* dash */
 #dash{padding:calc(10px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));gap:8px}
-.top{display:flex;justify-content:space-between;align-items:center}
+.top{display:flex;justify-content:space-between;align-items:center;min-height:18px}
 .brand{font-weight:800;letter-spacing:1px;font-size:16px;display:flex;align-items:center;gap:8px}.brand-logo{width:36px;height:36px;border-radius:8px;object-fit:cover;background:#000;box-shadow:0 0 10px rgba(201,154,40,.4);flex-shrink:0}.brand .g{margin-left:4px;text-shadow:0 0 8px rgba(0,255,102,.6)}
 .vip{background:var(--g);color:#000;padding:1px 5px;font-size:11px;border-radius:2px;margin-left:4px}
 .status{font-size:11px;display:flex;flex-direction:column;align-items:flex-end;gap:2px}.status-row{display:flex;align-items:center;gap:6px}
@@ -75,15 +75,7 @@ button,.big{font-family:inherit;background:#000;color:var(--g);border:1px solid 
 .live-clock{font-size:10px;color:var(--dim);letter-spacing:.6px;font-variant-numeric:tabular-nums}
 .boot-clock{position:absolute;top:calc(10px + env(safe-area-inset-top));right:calc(16px + env(safe-area-inset-right));z-index:5}
 #boot{position:relative}
-.music-fab{position:absolute;right:calc(12px + env(safe-area-inset-right));bottom:calc(118px + env(safe-area-inset-bottom));z-index:60;width:44px;height:44px;border-radius:50%;border:1px solid #c99a28;background:rgba(0,0,0,.86);color:#e8c36a;display:flex;align-items:center;justify-content:center;gap:3px;padding:0;box-shadow:0 0 14px rgba(201,154,40,.28);backdrop-filter:blur(6px)}
-.music-fab .spk{font-size:16px;line-height:1}
-.music-fab .eq{display:none;align-items:flex-end;gap:2px;height:14px}
-.music-fab.on .eq{display:flex}
-.music-fab .eq i{display:block;width:2px;height:3px;background:#e8c36a;border-radius:1px}
-.music-fab.on .eq i{animation:eqbar .7s ease-in-out infinite}
-.music-fab.on .eq i:nth-child(1){animation-delay:0s}
-.music-fab.on .eq i:nth-child(2){animation-delay:.15s}
-.music-fab.on .eq i:nth-child(3){animation-delay:.3s}
-.music-fab.on .eq i:nth-child(4){animation-delay:.08s}
-@keyframes eqbar{0%,100%{height:3px}50%{height:14px}}
-@media (max-height:740px){.boot-logo{width:150px;height:150px}.music-fab{bottom:calc(108px + env(safe-area-inset-bottom));width:40px;height:40px}}
+.hero{display:flex;justify-content:center;align-items:center;flex-shrink:0;padding:2px 0 4px}
+.hero-logo{width:120px;height:120px;object-fit:contain;background:#000;display:block;filter:drop-shadow(0 0 16px rgba(201,154,40,.5))}
+@media (max-height:740px){.boot-logo{width:150px;height:150px}.hero-logo{width:88px;height:88px}#chart{height:72px}}
+@media (max-height:680px){.hero-logo{width:72px;height:72px}.equity{font-size:26px}#chart{height:64px}}
