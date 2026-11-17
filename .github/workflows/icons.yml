@@ -12,19 +12,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-      - name: Decode PNG icons (main)
+      - name: Decode binary assets (main)
         run: |
-          for f in icons-src/*.b64; do base64 -d "$f" > "$(basename "${f%.b64}")"; done
+          set -euo pipefail
+          if [ -d icons-src ]; then
+            while IFS= read -r -d '' f; do
+              rel="${f#icons-src/}"
+              out="${rel%.b64}"
+              mkdir -p "$(dirname "$out")"
+              base64 -d "$f" > "$out"
+            done < <(find icons-src -type f -name '*.b64' -print0)
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
-          git add *.png
-          git diff --cached --quiet || git commit -m "Build PNG icons"
+          git add -A
+          git diff --cached --quiet || git commit -m "Build binary assets from icons-src"
           git push origin HEAD:main
       - name: Sync site files to gh-pages
         run: |
+          set -euo pipefail
           git fetch origin gh-pages
           git checkout -B gh-pages origin/gh-pages
-          git checkout main -- index.html style.css app.js data.js manifest.json .nojekyll apple-touch-icon.png icon-192.png icon-512.png
+          FILES="index.html style.css app.js data.js manifest.json .nojekyll README.md apple-touch-icon.png icon-192.png icon-512.png favicon.png favicon-32.png favicon.ico logo.png og-image.png"
+          # checkout only files that exist on main
+          present=""
+          for f in $FILES; do
+            if git cat-file -e "main:$f" 2>/dev/null; then present="$present $f"; fi
+          done
+          git checkout main -- $present
+          if git cat-file -e "main:audio" 2>/dev/null || git ls-tree -d --name-only main audio >/dev/null 2>&1; then
+            git checkout main -- audio || true
+          fi
           git add -A
           git diff --cached --quiet || git commit -m "Sync site from main"
           git push origin gh-pages
