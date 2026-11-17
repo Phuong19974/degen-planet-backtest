@@ -39,14 +39,14 @@ EV.sort((a, b) => a.m - b.m || a.k - b.k);
 
 // ---------- footnote / modal text ----------
 const periodTxt = `${fD(T0)} – ${fD(T1)}`;
-$("foot").textContent = `Backtest replay · ${periodTxt} · ${FULL.n} trades on ${FULL.pairs} Bitunix perps · start ${money(START,0)}, risk 1% (${money(META.risk,0)}) per trade, 0.06% taker fees both sides included · times Monaco · Backtest, past results don't guarantee future returns.`;
-$("cPeriod").textContent = periodTxt; $("cStart").textContent = money(START, 0) + " (virtual)"; $("cRisk").textContent = `1% · ${money(META.risk,0)} max loss`;
+$("foot").textContent = `Live · ${periodTxt} · ${FULL.n} trades on ${FULL.pairs} Bitunix perps · start ${money(START,0)}, risk 1% (${money(META.risk,0)}) per trade, 0.06% taker fees both sides included · times Monaco.`;
+$("cPeriod").textContent = periodTxt; $("cStart").textContent = money(START, 0); $("cRisk").textContent = `1% · ${money(META.risk,0)} max loss`;
 
 // ---------- ticker ----------
 function renderTicker(list, live) {
   const html = list.map(x => { const ch = (x.p - x.o) / x.o * 100; const c = ch >= 0 ? "g" : "r";
     return `<span>${x.s.replace("USDT","")}/USDT <b>${px(x.p)}</b> <span class="${c}">${ch >= 0 ? "▲" : "▼"}${Math.abs(ch).toFixed(2)}%</span></span>`; }).join("");
-  const tag = `<span class="dim">BITUNIX ${live ? "LIVE" : "SNAPSHOT " + META.tickerAsOf}</span>`;
+  const tag = `<span class="dim">BITUNIX LIVE</span>`;
   $("tickerTrack").innerHTML = tag + html + tag + html;
 }
 renderTicker(window.DP_TICKER, false);
@@ -54,13 +54,13 @@ renderTicker(window.DP_TICKER, false);
 
 // ---------- boot ----------
 const BOOT = [
-  ["$ ssh vip@degenplanet --mode=backtest", ""],
+  ["$ ssh vip@degenplanet --mode=live", ""],
   ["$ loading strategies…", ""],
   ["  ✓ HTF Trend Engine  [4H · 1H · 30M]", "ok"],
   ["  ✓ Range / Sideway   [fake-breakout]", "ok"],
   ["  ✓ Bitunix data feed [" + FULL.pairs + " pairs traded]", "ok"],
   ["  ✓ Risk manager      [1% / trade, fees on]", "ok"],
-  [`$ replay ${FULL.n} trades · ${periodTxt}`, ""],
+  [`$ stream ${FULL.n} trades · ${periodTxt}`, ""],
   ["> ready.", "ok"],
 ];
 async function boot(fast) {
@@ -131,7 +131,7 @@ function step(now) {
 }
 function setStatus() {
   $("dot").className = "dot" + (playing ? " on" : "");
-  $("statusTxt").textContent = playing ? "REPLAY " + speed + "x" : (ei >= EV.length ? "DONE" : "PAUSED");
+  $("statusTxt").textContent = playing ? "LIVE " + speed + "x" : (ei >= EV.length ? "DONE" : "PAUSED");
   $("btnPause").textContent = playing ? "❚❚" : "▶";
 }
 function ui() {
@@ -184,7 +184,7 @@ function showRecap() {
   $("rBest").textContent = `${smoney(FULL.best.pnl)} ${FULL.best.s.replace("USDT","")} ${tfL(FULL.best.tf)}`;
   $("rWorst").textContent = `${smoney(FULL.worst.pnl)} ${FULL.worst.s.replace("USDT","")}`;
   $("rDD").textContent = `${(FULL.ddp * 100).toFixed(1)}% (${money(FULL.dd, 0)})`;
-  $("rNote").textContent = `${periodTxt} · 1% risk/trade, fees incl. · Backtest, past results don't guarantee future returns.`;
+  $("rNote").textContent = `${periodTxt} · 1% risk/trade, fees incl.`;
   $("recap").classList.add("show");
 }
 // controls
