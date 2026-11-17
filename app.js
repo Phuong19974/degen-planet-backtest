@@ -86,11 +86,11 @@ $("btnConnect").onclick = async () => {
   b.textContent = "CONNECTED ✓"; b.classList.add("done"); await sleep(800);
   $("connect").classList.remove("show"); showDash(); await sleep(500); start();
 };
-function showDash() { $("boot").classList.remove("active"); $("dash").classList.add("active"); resize(); draw(); drawLogChart(); }
+function showDash() { $("boot").classList.remove("active"); $("dash").classList.add("active"); resize(); draw(); drawLogChart(true); }
 
 // ---------- replay state ----------
-// ~2.5s per trade at 1x so the candle chart is readable; 0.5x/2x/4x stay relative.
-const DUR = TR.length * 2500;
+// ~30s at 1x for the full session (~43ms/trade); 0.5x/2x/4x stay relative.
+const DUR = 30000;
 const KEYS = (() => {
   const out = [], seen = new Set();
   for (const e of EV) { if (!seen.has(e.m)) { seen.add(e.m); out.push(e.m); } }
@@ -106,13 +106,13 @@ function simAt(playMs) {
   const f = x - i;
   return KEYS[i] + (KEYS[i + 1] - KEYS[i]) * f;
 }
-let speed = 1, playing = false, sim = T0, playMs = 0, last = 0, ei = 0, raf = 0, shown = START;
+let speed = 1, playing = false, sim = T0, playMs = 0, playOrigin = 0, last = 0, ei = 0, raf = 0, shown = START;
 let S;
 function reset() {
   S = { eq: START, pk: START, ddp: 0, n: 0, w: 0, open: 0, pts: [[T0, START]],
         st: { HTF: { n: 0, w: 0, p: new Set(), pnl: 0 }, RANGE: { n: 0, w: 0, p: new Set(), pnl: 0 } } };
-  sim = T0; playMs = 0; ei = 0; shown = START; $("log").innerHTML = ""; logN = 0; $("recap").classList.remove("show");
-  chartTrade = null; openStack = []; lastSyncKey = "";
+  sim = T0; playMs = 0; playOrigin = 0; ei = 0; shown = START; $("log").innerHTML = ""; logN = 0; $("recap").classList.remove("show");
+  chartTrade = null; openStack = []; lastSyncKey = ""; lastChartDraw = 0;
 }
 let logN = 0;
 function log(html) {
@@ -139,10 +139,13 @@ function apply(e) {
 function step(now) {
   const dt = Math.min(100, now - (last || now)); last = now;
   if (playing) {
-    playMs += dt * speed;
+    if (!playOrigin) playOrigin = now - playMs / speed;
+    playMs = (now - playOrigin) * speed;
     sim = simAt(playMs);
     while (ei < EV.length && EV[ei].m <= sim) apply(EV[ei++]);
-    if (playMs >= DUR) { playMs = DUR; sim = T1; playing = false; setStatus(); setTimeout(showRecap, 1200); }
+    if (playMs >= DUR) { playMs = DUR; sim = T1; shown = S.eq; playing = false; playOrigin = 0; setStatus(); drawLogChart(true); setTimeout(showRecap, 1200); }
+  } else {
+    playOrigin = 0;
   }
   shown += (S.eq - shown) * Math.min(1, dt / 160);
   if (Math.abs(S.eq - shown) < 0.5) shown = S.eq;
@@ -313,7 +316,13 @@ function resizeLogChart() {
   if (!el) return;
   lwChart.applyOptions({ width: el.clientWidth, height: el.clientHeight });
 }
-function drawLogChart() {
+const nowChart = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
+let lastChartDraw = 0;
+function drawLogChart(force) {
+  if (!force && playing) {
+    if (nowChart() - lastChartDraw < 100) return; // at most ~10 updates/s while running
+  }
+  lastChartDraw = nowChart();
   ensureLogChart();
   if (!lwChart) return;
   const t = chartTrade;
@@ -423,7 +432,7 @@ function resize() {
   const r = cv.getBoundingClientRect(); cv.width = r.width * d; cv.height = r.height * d; cx.setTransform(d, 0, 0, d, 0, 0);
   resizeLogChart();
 }
-addEventListener("resize", () => { resize(); draw(); drawLogChart(); });
+addEventListener("resize", () => { resize(); draw(); drawLogChart(true); });
 function draw() {
   if (!S) return; const W = cv.clientWidth, H = cv.clientHeight; cx.clearRect(0, 0, W, H);
   const pts = S.pts.concat([[Math.min(sim, T1), S.eq]]);
@@ -460,9 +469,9 @@ function start() { reset(); playing = true; last = 0; setStatus(); }
 $("btnPause").onclick = () => { if (ei >= EV.length) return start(); playing = !playing; setStatus(); };
 $("btnReplay").onclick = start; $("btnAgain").onclick = start;
 document.querySelectorAll(".speeds button").forEach(b => b.onclick = () => {
-  speed = +b.dataset.s; document.querySelectorAll(".speeds button").forEach(x => x.classList.toggle("sel", x === b)); setStatus(); });
+  speed = +b.dataset.s; playOrigin = 0; document.querySelectorAll(".speeds button").forEach(x => x.classList.toggle("sel", x === b)); setStatus(); });
 // jump helper (used for screenshots / testing): ?screen=connect|dash|recap&at=0.6
-function jumpTo(frac) { reset(); playMs = DUR * Math.max(0, Math.min(1, frac)); sim = simAt(playMs); while (ei < EV.length && EV[ei].m <= sim) apply(EV[ei++]); shown = S.eq; playing = false; setStatus(); draw(); drawLogChart(); }
+function jumpTo(frac) { reset(); playMs = DUR * Math.max(0, Math.min(1, frac)); sim = simAt(playMs); while (ei < EV.length && EV[ei].m <= sim) apply(EV[ei++]); shown = S.eq; playing = false; setStatus(); draw(); drawLogChart(true); }
 
 // CTA link: set JOIN_URL below, or pass ?join=https://t.me/yourchannel
 const JOIN_URL = qs.get("join") || "https://t.me/SignalVipdegen_Bot";
