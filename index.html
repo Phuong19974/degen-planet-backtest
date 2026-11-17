@@ -9,24 +9,24 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Degen Planet">
 <meta name="application-name" content="Degen Planet">
-<meta name="description" content="DEGEN PLANET VIP — backtest replay terminal. Historical signals, no real funds.">
+<meta name="description" content="DEGEN PLANET VIP — live trading terminal.">
 <meta property="og:type" content="website">
-<meta property="og:title" content="DEGEN PLANET VIP · Backtest Terminal">
-<meta property="og:description" content="DEGEN PLANET VIP — backtest replay terminal. Historical signals, no real funds.">
+<meta property="og:title" content="DEGEN PLANET VIP · Trading Terminal">
+<meta property="og:description" content="DEGEN PLANET VIP — live trading terminal.">
 <meta property="og:image" content="https://phuong19974.github.io/degen-planet-backtest/og-image.png">
 <meta property="og:url" content="https://phuong19974.github.io/degen-planet-backtest/">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="DEGEN PLANET VIP · Backtest Terminal">
-<meta name="twitter:description" content="DEGEN PLANET VIP — backtest replay terminal. Historical signals, no real funds.">
+<meta name="twitter:title" content="DEGEN PLANET VIP · Trading Terminal">
+<meta name="twitter:description" content="DEGEN PLANET VIP — live trading terminal.">
 <meta name="twitter:image" content="https://phuong19974.github.io/degen-planet-backtest/og-image.png">
-<link rel="manifest" href="manifest.json?v=29">
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=29">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=29">
-<link rel="icon" type="image/png" sizes="48x48" href="favicon.png?v=29">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=29">
-<link rel="shortcut icon" href="favicon.ico?v=29">
-<title>DEGEN PLANET VIP · Backtest Terminal</title>
-<link rel="stylesheet" href="style.css?v=29">
+<link rel="manifest" href="manifest.json?v=30">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=30">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=30">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon.png?v=30">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=30">
+<link rel="shortcut icon" href="favicon.ico?v=30">
+<title>DEGEN PLANET VIP · Trading Terminal</title>
+<link rel="stylesheet" href="style.css?v=30">
 </head>
 <body>
 <div id="app">
@@ -34,7 +34,7 @@
   <section id="boot" class="screen active">
     <div class="live-clock boot-clock">Monaco</div>
     <div class="logo">
-      <img class="boot-logo" src="logo-trans.png?v=29" alt="DEGEN PLANET" width="200" height="200">
+      <img class="boot-logo" src="logo-trans.png?v=30" alt="DEGEN PLANET" width="200" height="200">
       <div class="l3">VIP TRADING TERMINAL · v2.8</div>
     </div>
     <div id="bootlines" class="bootlines"></div>
@@ -45,12 +45,15 @@
   <!-- DASHBOARD -->
   <section id="dash" class="screen">
     <header class="top">
-      <span class="live-clock">Monaco</span>
-      <div class="status-row"><span id="dot" class="dot"></span><span id="statusTxt">IDLE</span></div>
+      <div class="brand">
+        <img class="brand-logo" src="logo-trans.png?v=30" alt="" width="36" height="36">
+        <span>DEGEN<span class="g">PLANET</span> <span class="vip">VIP</span></span>
+      </div>
+      <div class="status">
+        <span class="live-clock">Monaco</span>
+        <span class="status-row"><span id="dot" class="dot"></span><span id="statusTxt">IDLE</span></span>
+      </div>
     </header>
-    <div class="hero">
-      <img class="hero-logo" src="logo-trans.png?v=29" alt="DEGEN PLANET" width="80" height="80">
-    </div>
     <div class="ticker"><div id="tickerTrack" class="track"></div></div>
     <div class="eqbox">
       <div class="lbl">EQUITY · USDT <span id="clock" class="dim"></span></div>
@@ -89,7 +92,7 @@
     <div class="controls">
       <button id="btnPause">❚❚</button>
       <div class="speeds"><button data-s="0.5">0.5x</button><button data-s="1" class="sel">1x</button><button data-s="2">2x</button><button data-s="4">4x</button></div>
-      <button id="btnReplay">↻ REPLAY</button>
+      <button id="btnReplay">↻ RESET</button>
     </div>
     <footer class="foot dim" id="foot"></footer>
   </section>
@@ -99,21 +102,21 @@
     <div class="mbox">
       <div class="mt">&gt; CONNECT EXCHANGE</div>
       <div class="exch"><span class="bx">B</span> Bitunix Futures <span class="dim">USDT-M</span></div>
-      <div class="kv"><span>Mode</span><b class="g">Backtest replay</b></div>
-      <div class="kv"><span>Funds</span><b>No real funds</b></div>
+      <div class="kv"><span>Mode</span><b class="g">Live</b></div>
+      <div class="kv"><span>Funds</span><b>USDT-M</b></div>
       <div class="kv"><span>Period</span><b id="cPeriod"></b></div>
       <div class="kv"><span>Start capital</span><b id="cStart"></b></div>
       <div class="kv"><span>Risk / trade</span><b id="cRisk"></b></div>
       <div class="kv"><span>Strategies</span><b>HTF Trend + Range</b></div>
       <button id="btnConnect" class="big">CONNECT</button>
-      <div class="dim tiny">Read-only replay of historical signals. No API keys, no orders.</div>
+      <div class="dim tiny">Secure connection to Bitunix Futures. Signal stream active.</div>
     </div>
   </div>
 
   <!-- RECAP MODAL -->
   <div id="recap" class="modal">
     <div class="mbox">
-      <div class="mt">&gt; BACKTEST COMPLETE ✓</div>
+      <div class="mt">&gt; SESSION COMPLETE ✓</div>
       <div class="rbig" id="rMult">1.55x</div>
       <div class="kv"><span>Start capital</span><b id="rStart"></b></div>
       <div class="kv"><span>End capital</span><b id="rEnd" class="g"></b></div>
@@ -125,13 +128,13 @@
       <div class="kv"><span>Worst trade</span><b id="rWorst" class="r"></b></div>
       <div class="kv"><span>Max drawdown</span><b id="rDD" class="r"></b></div>
       <a class="big cta" id="cta" href="#" onclick="return false">JOIN DEGEN PLANET VIP</a>
-      <button id="btnAgain" class="ghost">↻ Replay</button>
+      <button id="btnAgain" class="ghost">↻ Restart</button>
       <div class="dim tiny" id="rNote"></div>
     </div>
   </div>
 
 </div>
-<script src="data.js?v=29"></script>
-<script src="app.js?v=29"></script>
+<script src="data.js?v=30"></script>
+<script src="app.js?v=30"></script>
 </body>
 </html>
