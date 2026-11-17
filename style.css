@@ -46,7 +46,7 @@ body{display:flex;justify-content:center;overflow:hidden}
 .stats b{font-size:13px;color:var(--w)}
 .logwrap{flex:1;min-height:0;border:1px solid var(--line);border-radius:4px;display:flex;flex-direction:column;background:#000}
 .loghead{font-size:10px;display:flex;justify-content:space-between;padding:4px 8px;border-bottom:1px solid var(--line);color:var(--g)}
-.chartbox{flex-shrink:0;height:280px;display:flex;flex-direction:column;border-bottom:1px solid var(--line);background:#131722;position:relative;z-index:51;overflow:hidden}
+.chartbox{flex-shrink:0;height:280px;display:flex;flex-direction:column;border-bottom:1px solid var(--line);background:#000;position:relative;z-index:51;overflow:hidden}
 #logChart{flex:1;width:100%;min-height:0;height:100%}
 @media (max-height:740px){.chartbox{height:268px}}
 @media (max-height:680px){.chartbox{height:260px}}

@@ -89,13 +89,29 @@ $("btnConnect").onclick = async () => {
 function showDash() { $("boot").classList.remove("active"); $("dash").classList.add("active"); resize(); draw(); drawLogChart(); }
 
 // ---------- replay state ----------
-const DUR = 36000; // ms at 1x
-let speed = 1, playing = false, sim = T0, last = 0, ei = 0, raf = 0, shown = START;
+// ~2.5s per trade at 1x so the candle chart is readable; 0.5x/2x/4x stay relative.
+const DUR = TR.length * 2500;
+const KEYS = (() => {
+  const out = [], seen = new Set();
+  for (const e of EV) { if (!seen.has(e.m)) { seen.add(e.m); out.push(e.m); } }
+  if (!out.length || out[0] > T0) out.unshift(T0);
+  if (out[out.length - 1] < T1) out.push(T1);
+  return out;
+})();
+function simAt(playMs) {
+  if (KEYS.length <= 1) return T0;
+  const n = KEYS.length - 1;
+  const x = Math.max(0, Math.min(1, playMs / DUR)) * n;
+  const i = Math.min(n - 1, Math.floor(x));
+  const f = x - i;
+  return KEYS[i] + (KEYS[i + 1] - KEYS[i]) * f;
+}
+let speed = 1, playing = false, sim = T0, playMs = 0, last = 0, ei = 0, raf = 0, shown = START;
 let S;
 function reset() {
   S = { eq: START, pk: START, ddp: 0, n: 0, w: 0, open: 0, pts: [[T0, START]],
         st: { HTF: { n: 0, w: 0, p: new Set(), pnl: 0 }, RANGE: { n: 0, w: 0, p: new Set(), pnl: 0 } } };
-  sim = T0; ei = 0; shown = START; $("log").innerHTML = ""; logN = 0; $("recap").classList.remove("show");
+  sim = T0; playMs = 0; ei = 0; shown = START; $("log").innerHTML = ""; logN = 0; $("recap").classList.remove("show");
   chartTrade = null; openStack = []; lastSyncKey = "";
 }
 let logN = 0;
@@ -123,9 +139,10 @@ function apply(e) {
 function step(now) {
   const dt = Math.min(100, now - (last || now)); last = now;
   if (playing) {
-    sim += dt * speed * (T1 - T0) / DUR;
+    playMs += dt * speed;
+    sim = simAt(playMs);
     while (ei < EV.length && EV[ei].m <= sim) apply(EV[ei++]);
-    if (ei >= EV.length) { sim = T1; playing = false; setStatus(); setTimeout(showRecap, 1200); }
+    if (playMs >= DUR) { playMs = DUR; sim = T1; playing = false; setStatus(); setTimeout(showRecap, 1200); }
   }
   shown += (S.eq - shown) * Math.min(1, dt / 160);
   if (Math.abs(S.eq - shown) < 0.5) shown = S.eq;
@@ -153,7 +170,7 @@ function ui() {
   }
   $("sTrades").textContent = S.n; $("sWin").textContent = S.n ? (S.w / S.n * 100).toFixed(1) + "%" : "–";
   $("sOpen").textContent = S.open; $("sDD").textContent = (S.ddp * 100).toFixed(1) + "%";
-  $("logcount").textContent = `${Math.round((Math.min(sim, T1) - T0) / (T1 - T0) * 100)}%`;
+  $("logcount").textContent = `${Math.round(Math.min(playMs, DUR) / DUR * 100)}%`;
 }
 
 // ---------- decision-log candlestick (real prefetched OHLC only; never synthesize) ----------
@@ -232,26 +249,27 @@ function ensureLogChart() {
     width: el.clientWidth,
     height: el.clientHeight,
     layout: {
-      background: { type: LC.ColorType ? LC.ColorType.Solid : "solid", color: "#131722" },
-      textColor: "#787b86",
+      background: { type: LC.ColorType ? LC.ColorType.Solid : "solid", color: "#000000" },
+      textColor: "#4f7a5c",
       fontSize: 11,
-      fontFamily: "Trebuchet MS, -apple-system, BlinkMacSystemFont, Roboto, Ubuntu, sans-serif"
+      fontFamily: "SF Mono, ui-monospace, Menlo, Consolas, Roboto Mono, monospace",
+      attributionLogo: false
     },
     grid: {
-      vertLines: { color: "rgba(42,46,57,0.55)" },
-      horzLines: { color: "rgba(42,46,57,0.55)" }
+      vertLines: { color: "rgba(0,255,102,0.08)" },
+      horzLines: { color: "rgba(0,255,102,0.08)" }
     },
     crosshair: {
       mode: LC.CrosshairMode.Normal,
-      vertLine: { color: "rgba(120,123,134,0.5)", width: 1, style: LC.LineStyle.SparseDotted, labelBackgroundColor: "#2a2e39" },
-      horzLine: { color: "rgba(120,123,134,0.5)", width: 1, style: LC.LineStyle.SparseDotted, labelBackgroundColor: "#2a2e39" }
+      vertLine: { color: "rgba(0,255,102,0.35)", width: 1, style: LC.LineStyle.SparseDotted, labelBackgroundColor: "#03100a" },
+      horzLine: { color: "rgba(0,255,102,0.35)", width: 1, style: LC.LineStyle.SparseDotted, labelBackgroundColor: "#03100a" }
     },
     rightPriceScale: {
-      borderColor: "#2a2e39",
+      borderColor: "#0f2a18",
       scaleMargins: { top: 0.06, bottom: 0.22 }
     },
     timeScale: {
-      borderColor: "#2a2e39",
+      borderColor: "#0f2a18",
       timeVisible: true,
       secondsVisible: false,
       rightOffset: 3,
@@ -262,8 +280,8 @@ function ensureLogChart() {
       visible: false,
       text: "",
       fontSize: 22,
-      fontFamily: "Trebuchet MS, sans-serif",
-      color: "rgba(255,255,255,0.07)",
+      fontFamily: "SF Mono, ui-monospace, Menlo, Consolas, monospace",
+      color: "rgba(0,255,102,0.10)",
       horzAlign: "center",
       vertAlign: "center"
     },
@@ -271,9 +289,9 @@ function ensureLogChart() {
     kineticScroll: { touch: false }
   });
   candleSeries = lwChart.addCandlestickSeries({
-    upColor: "#26a69a", downColor: "#ef5350",
-    borderUpColor: "#26a69a", borderDownColor: "#ef5350",
-    wickUpColor: "#26a69a", wickDownColor: "#ef5350",
+    upColor: "#00ff66", downColor: "#ff3b4f",
+    borderUpColor: "#00ff66", borderDownColor: "#ff3b4f",
+    wickUpColor: "#00ff66", wickDownColor: "#ff3b4f",
     borderVisible: true,
     priceLineVisible: false,
     lastValueVisible: true
@@ -330,7 +348,7 @@ function drawLogChart() {
   const volumes = vis.map(c => ({
     time: Math.floor(c.t / 1000),
     value: c.v,
-    color: c.c >= c.o ? "rgba(38,166,154,0.5)" : "rgba(239,83,80,0.5)"
+    color: c.c >= c.o ? "rgba(0,255,102,0.40)" : "rgba(255,59,79,0.40)"
   }));
   candleSeries.applyOptions({ priceFormat: priceFmt(t.e) });
   candleSeries.setData(candles);
@@ -340,18 +358,18 @@ function drawLogChart() {
     clearPriceLines();
     const dashed = LightweightCharts.LineStyle.Dashed;
     priceLines.push(candleSeries.createPriceLine({
-      price: t.e, color: "#787b86", lineWidth: 1, lineStyle: dashed, axisLabelVisible: true, title: "E"
+      price: t.e, color: "#8fb89a", lineWidth: 1, lineStyle: dashed, axisLabelVisible: true, title: "E"
     }));
     priceLines.push(candleSeries.createPriceLine({
-      price: t.sl, color: "#ef5350", lineWidth: 1, lineStyle: dashed, axisLabelVisible: true, title: "SL"
+      price: t.sl, color: "#ff3b4f", lineWidth: 1, lineStyle: dashed, axisLabelVisible: true, title: "SL"
     }));
     if (Math.abs(t.xp - t.sl) > Math.max(Math.abs(t.sl), 1e-12) * 1e-8) {
       priceLines.push(candleSeries.createPriceLine({
-        price: t.xp, color: "#26a69a", lineWidth: 1, lineStyle: dashed, axisLabelVisible: true, title: "TP"
+        price: t.xp, color: "#00ff66", lineWidth: 1, lineStyle: dashed, axisLabelVisible: true, title: "TP"
       }));
     }
     lwChart.applyOptions({
-      watermark: { visible: true, text: `${t.s}  ${tfL(t.tf)}`, color: "rgba(255,255,255,0.08)", fontSize: 22 }
+      watermark: { visible: true, text: `${t.s}  ${tfL(t.tf)}`, color: "rgba(0,255,102,0.12)", fontSize: 22 }
     });
   }
 
@@ -368,7 +386,7 @@ function drawLogChart() {
     marks.push({
       time: et,
       position: isLong ? "belowBar" : "aboveBar",
-      color: isLong ? "#26a69a" : "#ef5350",
+      color: isLong ? "#00ff66" : "#ff3b4f",
       shape: isLong ? "arrowUp" : "arrowDown",
       text: isLong ? "BUY" : "SELL"
     });
@@ -380,7 +398,7 @@ function drawLogChart() {
       marks.push({
         time: xt,
         position: isLong ? "aboveBar" : "belowBar",
-        color: win ? "#26a69a" : "#ef5350",
+        color: win ? "#00ff66" : "#ff3b4f",
         shape: isLong ? "arrowDown" : "arrowUp",
         text: ""
       });
@@ -444,7 +462,7 @@ $("btnReplay").onclick = start; $("btnAgain").onclick = start;
 document.querySelectorAll(".speeds button").forEach(b => b.onclick = () => {
   speed = +b.dataset.s; document.querySelectorAll(".speeds button").forEach(x => x.classList.toggle("sel", x === b)); setStatus(); });
 // jump helper (used for screenshots / testing): ?screen=connect|dash|recap&at=0.6
-function jumpTo(frac) { reset(); sim = T0 + (T1 - T0) * frac; while (ei < EV.length && EV[ei].m <= sim) apply(EV[ei++]); shown = S.eq; playing = false; setStatus(); draw(); drawLogChart(); }
+function jumpTo(frac) { reset(); playMs = DUR * Math.max(0, Math.min(1, frac)); sim = simAt(playMs); while (ei < EV.length && EV[ei].m <= sim) apply(EV[ei++]); shown = S.eq; playing = false; setStatus(); draw(); drawLogChart(); }
 
 // CTA link: set JOIN_URL below, or pass ?join=https://t.me/yourchannel
 const JOIN_URL = qs.get("join") || "https://t.me/SignalVipdegen_Bot";
