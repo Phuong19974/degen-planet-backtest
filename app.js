@@ -96,7 +96,7 @@ function reset() {
   S = { eq: START, pk: START, ddp: 0, n: 0, w: 0, open: 0, pts: [[T0, START]],
         st: { HTF: { n: 0, w: 0, p: new Set(), pnl: 0 }, RANGE: { n: 0, w: 0, p: new Set(), pnl: 0 } } };
   sim = T0; ei = 0; shown = START; $("log").innerHTML = ""; logN = 0; $("recap").classList.remove("show");
-  chartTrade = null; openStack = [];
+  chartTrade = null; openStack = []; lastSyncKey = "";
 }
 let logN = 0;
 function log(html) {
@@ -182,7 +182,28 @@ function setLogTrade(t, opening) {
     if (getSeries(openStack[i].s, openStack[i].tf)) { chartTrade = openStack[i]; return; }
   }
 }
-const lcv = $("logChart"), lcx = lcv ? lcv.getContext("2d") : null;
+function priceFmt(p) {
+  const a = Math.abs(p) || 1;
+  const prec = a >= 100 ? 2 : a >= 10 ? 3 : a >= 1 ? 4 : a >= 0.1 ? 5 : a >= 0.01 ? 5 : a >= 0.001 ? 6 : a >= 0.0001 ? 7 : 8;
+  return { type: "price", precision: prec, minMove: Math.pow(10, -prec) };
+}
+function monacoTick(time, type) {
+  const LC = window.LightweightCharts;
+  const ms = (typeof time === "number" ? time : 0) * 1000;
+  if (type === LC.TickMarkType.Year) return tzParts(ms, { year: "numeric" }).year;
+  if (type === LC.TickMarkType.Month) return tzParts(ms, { month: "short" }).month;
+  if (type === LC.TickMarkType.DayOfMonth) {
+    const p = tzParts(ms, { day: "2-digit", month: "short" });
+    return `${p.day} ${p.month}`;
+  }
+  const p = tzParts(ms, { hour: "2-digit", minute: "2-digit" });
+  return `${p.hour}:${p.minute}`;
+}
+function monacoTimeLabel(time) {
+  const ms = (typeof time === "number" ? time : 0) * 1000;
+  const p = tzParts(ms, { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+  return `${p.day}/${p.month}/${p.year} ${p.hour}:${p.minute}`;
+}
 function candlesUntil(series, tEnd) {
   const out = [], iv = series.iv;
   for (const seg of series.segs) {
@@ -191,80 +212,190 @@ function candlesUntil(series, tEnd) {
       const t = t0 + i * iv;
       if (t > tEnd) return out;
       const r = rows[i];
-      out.push({ t, o: r[0], h: r[1], l: r[2], c: r[3] });
+      out.push({ t, o: r[0], h: r[1], l: r[2], c: r[3], v: r.length > 4 ? r[4] : 0 });
     }
   }
   return out;
 }
+
+let lwChart = null, candleSeries = null, volSeries = null, priceLines = [], lastSyncKey = "";
+function clearPriceLines() {
+  if (candleSeries) priceLines.forEach(l => { try { candleSeries.removePriceLine(l); } catch (e) {} });
+  priceLines = [];
+}
+function ensureLogChart() {
+  if (lwChart || !window.LightweightCharts) return;
+  const el = $("logChart");
+  if (!el || el.clientWidth < 2 || el.clientHeight < 2) return;
+  const LC = LightweightCharts;
+  lwChart = LC.createChart(el, {
+    width: el.clientWidth,
+    height: el.clientHeight,
+    layout: {
+      background: { type: LC.ColorType ? LC.ColorType.Solid : "solid", color: "#131722" },
+      textColor: "#787b86",
+      fontSize: 11,
+      fontFamily: "Trebuchet MS, -apple-system, BlinkMacSystemFont, Roboto, Ubuntu, sans-serif"
+    },
+    grid: {
+      vertLines: { color: "rgba(42,46,57,0.55)" },
+      horzLines: { color: "rgba(42,46,57,0.55)" }
+    },
+    crosshair: {
+      mode: LC.CrosshairMode.Normal,
+      vertLine: { color: "rgba(120,123,134,0.5)", width: 1, style: LC.LineStyle.SparseDotted, labelBackgroundColor: "#2a2e39" },
+      horzLine: { color: "rgba(120,123,134,0.5)", width: 1, style: LC.LineStyle.SparseDotted, labelBackgroundColor: "#2a2e39" }
+    },
+    rightPriceScale: {
+      borderColor: "#2a2e39",
+      scaleMargins: { top: 0.06, bottom: 0.22 }
+    },
+    timeScale: {
+      borderColor: "#2a2e39",
+      timeVisible: true,
+      secondsVisible: false,
+      rightOffset: 3,
+      tickMarkFormatter: monacoTick
+    },
+    localization: { timeFormatter: monacoTimeLabel },
+    watermark: {
+      visible: false,
+      text: "",
+      fontSize: 22,
+      fontFamily: "Trebuchet MS, sans-serif",
+      color: "rgba(255,255,255,0.07)",
+      horzAlign: "center",
+      vertAlign: "center"
+    },
+    handleScroll: { vertTouchDrag: false },
+    kineticScroll: { touch: false }
+  });
+  candleSeries = lwChart.addCandlestickSeries({
+    upColor: "#26a69a", downColor: "#ef5350",
+    borderUpColor: "#26a69a", borderDownColor: "#ef5350",
+    wickUpColor: "#26a69a", wickDownColor: "#ef5350",
+    borderVisible: true,
+    priceLineVisible: false,
+    lastValueVisible: true
+  });
+  volSeries = lwChart.addHistogramSeries({
+    priceFormat: { type: "volume" },
+    priceScaleId: "vol",
+    lastValueVisible: false,
+    priceLineVisible: false
+  });
+  lwChart.priceScale("vol").applyOptions({
+    scaleMargins: { top: 0.82, bottom: 0 },
+    visible: false
+  });
+}
+function resizeLogChart() {
+  if (!lwChart) return;
+  const el = $("logChart");
+  if (!el) return;
+  lwChart.applyOptions({ width: el.clientWidth, height: el.clientHeight });
+}
 function drawLogChart() {
-  if (!lcx) return;
-  const W = lcv.clientWidth, H = lcv.clientHeight;
-  lcx.clearRect(0, 0, W, H);
-  const meta = $("chartMeta");
+  ensureLogChart();
+  if (!lwChart) return;
   const t = chartTrade;
-  if (!t) { if (meta) meta.textContent = ""; return; }
+  if (!t) {
+    if (lastSyncKey) {
+      candleSeries.setData([]);
+      volSeries.setData([]);
+      candleSeries.setMarkers([]);
+      clearPriceLines();
+      lastSyncKey = "";
+    }
+    return;
+  }
   const series = getSeries(t.s, t.tf);
-  if (!series) { if (meta) meta.textContent = ""; return; }
+  if (!series) return;
   const iv = series.iv;
-  const tRight = Math.min(sim, t.xm + 8 * iv);
+  const tRight = Math.min(sim, t.xm + 12 * iv);
+  const barOpen = tRight - (tRight % iv);
+  const tradeKey = t.s + "|" + t.tf + "|" + t.tm;
+  const key = tradeKey + "|" + barOpen + "|" + (sim >= t.xm ? "x" : "o");
+  if (key === lastSyncKey) return;
+  const tradeChanged = lastSyncKey.split("|").slice(0, 3).join("|") !== tradeKey;
+  lastSyncKey = key;
+
+  const ctxBars = 72;
+  const tFrom = t.tm - ctxBars * iv;
   const all = candlesUntil(series, tRight);
-  if (!all.length) return;
-  if (meta) meta.textContent = `${t.s} · ${tfL(t.tf)} · ${t.sd}`;
-  const padL = 2, padR = 34, padT = 3, padB = 3;
-  const maxVis = Math.max(20, Math.floor((W - padL - padR) / 4.5));
-  const vis = all.length > maxVis ? all.slice(-maxVis) : all;
-  let lo = Infinity, hi = -Infinity;
-  for (const c of vis) { lo = Math.min(lo, c.l); hi = Math.max(hi, c.h); }
-  lo = Math.min(lo, t.e, t.sl, t.xp);
-  hi = Math.max(hi, t.e, t.sl, t.xp);
-  const pad = (hi - lo) * 0.14 || Math.abs(hi) * 0.002 || 1e-8;
-  lo -= pad; hi += pad;
-  const n = vis.length, slot = (W - padL - padR) / n;
-  const X = i => padL + (i + 0.5) * slot;
-  const Y = p => padT + (hi - p) / (hi - lo) * (H - padT - padB);
-  lcx.strokeStyle = "rgba(0,255,102,.07)"; lcx.lineWidth = 1;
-  for (let i = 1; i < 3; i++) { lcx.beginPath(); lcx.moveTo(0, H * i / 3); lcx.lineTo(W, H * i / 3); lcx.stroke(); }
-  const hline = (price, color, dash, label) => {
-    const y = Y(price);
-    if (y < 0 || y > H) return;
-    lcx.save();
-    lcx.strokeStyle = color; lcx.lineWidth = 1; lcx.setLineDash(dash || []);
-    lcx.beginPath(); lcx.moveTo(padL, y); lcx.lineTo(W - padR + 2, y); lcx.stroke();
-    lcx.setLineDash([]); lcx.fillStyle = color;
-    lcx.font = "9px ui-monospace, Menlo, Consolas, monospace";
-    lcx.textBaseline = "middle"; lcx.textAlign = "left";
-    lcx.fillText(label, W - padR + 4, y);
-    lcx.restore();
-  };
-  hline(t.e, "rgba(232,255,232,.75)", [3, 3], "E");
-  hline(t.sl, "rgba(255,59,79,.95)", [], "SL");
-  if (Math.abs(t.xp - t.sl) > Math.max(Math.abs(t.sl), 1e-12) * 1e-8) {
-    hline(t.xp, "rgba(0,255,102,.95)", [], "TP");
+  const vis = all.filter(c => c.t >= tFrom);
+  if (!vis.length) return;
+
+  const candles = vis.map(c => ({ time: Math.floor(c.t / 1000), open: c.o, high: c.h, low: c.l, close: c.c }));
+  const volumes = vis.map(c => ({
+    time: Math.floor(c.t / 1000),
+    value: c.v,
+    color: c.c >= c.o ? "rgba(38,166,154,0.5)" : "rgba(239,83,80,0.5)"
+  }));
+  candleSeries.applyOptions({ priceFormat: priceFmt(t.e) });
+  candleSeries.setData(candles);
+  volSeries.setData(volumes);
+
+  if (tradeChanged) {
+    clearPriceLines();
+    const dashed = LightweightCharts.LineStyle.Dashed;
+    priceLines.push(candleSeries.createPriceLine({
+      price: t.e, color: "#787b86", lineWidth: 1, lineStyle: dashed, axisLabelVisible: true, title: "E"
+    }));
+    priceLines.push(candleSeries.createPriceLine({
+      price: t.sl, color: "#ef5350", lineWidth: 1, lineStyle: dashed, axisLabelVisible: true, title: "SL"
+    }));
+    if (Math.abs(t.xp - t.sl) > Math.max(Math.abs(t.sl), 1e-12) * 1e-8) {
+      priceLines.push(candleSeries.createPriceLine({
+        price: t.xp, color: "#26a69a", lineWidth: 1, lineStyle: dashed, axisLabelVisible: true, title: "TP"
+      }));
+    }
+    lwChart.applyOptions({
+      watermark: { visible: true, text: `${t.s}  ${tfL(t.tf)}`, color: "rgba(255,255,255,0.08)", fontSize: 22 }
+    });
   }
-  for (let i = 0; i < n; i++) {
-    const c = vis[i], up = c.c >= c.o, col = up ? "#00ff66" : "#ff3b4f";
-    const x = X(i), hw = Math.max(0.6, slot * 0.32);
-    lcx.strokeStyle = col; lcx.fillStyle = col; lcx.lineWidth = 1;
-    lcx.beginPath(); lcx.moveTo(x, Y(c.h)); lcx.lineTo(x, Y(c.l)); lcx.stroke();
-    const y1 = Y(Math.max(c.o, c.c)), y2 = Y(Math.min(c.o, c.c));
-    lcx.fillRect(x - hw, y1, hw * 2, Math.max(1, y2 - y1));
-  }
-  const markAt = (ms, buy, closed) => {
-    const i = vis.findIndex(c => ms >= c.t && ms < c.t + iv);
-    if (i < 0) return;
-    const x = X(i), y = Y(buy ? vis[i].l : vis[i].h);
-    const dir = buy ? 1 : -1, s = 4.5;
-    lcx.beginPath();
-    lcx.moveTo(x, y + dir * 1);
-    lcx.lineTo(x - s, y + dir * (s + 3));
-    lcx.lineTo(x + s, y + dir * (s + 3));
-    lcx.closePath();
-    lcx.fillStyle = closed ? (buy ? "#00ff66" : "#ff3b4f") : (buy ? "#00ff66" : "#ff3b4f");
-    lcx.fill();
+
+  const snap = ms => {
+    const want = Math.floor((ms - (ms % iv)) / 1000);
+    if (candles.some(c => c.time === want)) return want;
+    const hit = candles.find(c => ms >= c.time * 1000 && ms < c.time * 1000 + iv);
+    return hit ? hit.time : null;
   };
+  const marks = [];
   const isLong = t.sd === "LONG";
-  markAt(t.tm, isLong, false);
-  if (sim >= t.xm) markAt(t.xm, !isLong, true);
+  const et = snap(t.tm);
+  if (et != null) {
+    marks.push({
+      time: et,
+      position: isLong ? "belowBar" : "aboveBar",
+      color: isLong ? "#26a69a" : "#ef5350",
+      shape: isLong ? "arrowUp" : "arrowDown",
+      text: isLong ? "BUY" : "SELL"
+    });
+  }
+  if (sim >= t.xm) {
+    const xt = snap(t.xm);
+    if (xt != null && xt !== et) {
+      const win = t.pnl >= 0;
+      marks.push({
+        time: xt,
+        position: isLong ? "aboveBar" : "belowBar",
+        color: win ? "#26a69a" : "#ef5350",
+        shape: isLong ? "arrowDown" : "arrowUp",
+        text: ""
+      });
+    }
+  }
+  candleSeries.setMarkers(marks);
+
+  try {
+    lwChart.timeScale().setVisibleRange({
+      from: candles[0].time,
+      to: candles[candles.length - 1].time
+    });
+  } catch (e) {
+    lwChart.timeScale().fitContent();
+  }
 }
 
 // chart
@@ -272,7 +403,7 @@ const cv = $("chart"), cx = cv.getContext("2d");
 function resize() {
   const d = devicePixelRatio || 1;
   const r = cv.getBoundingClientRect(); cv.width = r.width * d; cv.height = r.height * d; cx.setTransform(d, 0, 0, d, 0, 0);
-  if (lcv) { const lr = lcv.getBoundingClientRect(); lcv.width = lr.width * d; lcv.height = lr.height * d; lcx.setTransform(d, 0, 0, d, 0, 0); }
+  resizeLogChart();
 }
 addEventListener("resize", () => { resize(); draw(); drawLogChart(); });
 function draw() {
