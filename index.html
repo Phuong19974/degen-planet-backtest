@@ -19,14 +19,14 @@
 <meta name="twitter:title" content="DEGEN PLANET VIP · Trading Terminal">
 <meta name="twitter:description" content="Degen Planet VIP strategy terminal.">
 <meta name="twitter:image" content="https://phuong19974.github.io/degen-planet-backtest/og-image.png">
-<link rel="manifest" href="manifest.json?v=32">
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=32">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=32">
-<link rel="icon" type="image/png" sizes="48x48" href="favicon.png?v=32">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=32">
-<link rel="shortcut icon" href="favicon.ico?v=32">
+<link rel="manifest" href="manifest.json?v=33">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=33">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=33">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon.png?v=33">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=33">
+<link rel="shortcut icon" href="favicon.ico?v=33">
 <title>DEGEN PLANET VIP · Trading Terminal</title>
-<link rel="stylesheet" href="style.css?v=32">
+<link rel="stylesheet" href="style.css?v=33">
 </head>
 <body>
 <div id="app">
@@ -34,7 +34,7 @@
   <section id="boot" class="screen active">
     <div class="live-clock boot-clock">Monaco</div>
     <div class="logo">
-      <img class="boot-logo" src="logo-trans.png?v=32" alt="DEGEN PLANET" width="200" height="200">
+      <img class="boot-logo" src="logo-trans.png?v=33" alt="DEGEN PLANET" width="200" height="200">
       <div class="l3">VIP TRADING TERMINAL · v2.8</div>
     </div>
     <div id="bootlines" class="bootlines"></div>
@@ -46,7 +46,7 @@
   <section id="dash" class="screen">
     <header class="top">
       <div class="brand">
-        <img class="brand-logo" src="logo-trans.png?v=32" alt="" width="36" height="36">
+        <img class="brand-logo" src="logo-trans.png?v=33" alt="" width="36" height="36">
         <span>DEGEN<span class="g">PLANET</span> <span class="vip">VIP</span></span>
       </div>
       <div class="status">
@@ -87,6 +87,10 @@
     </div>
     <div class="logwrap">
       <div class="loghead"><span>&gt; DECISION LOG</span><span id="logcount" class="dim"></span></div>
+      <div class="chartbox" id="chartBox">
+        <div class="chartmeta" id="chartMeta"></div>
+        <canvas id="logChart"></canvas>
+      </div>
       <div id="log" class="log"></div>
     </div>
     <div class="controls">
@@ -134,7 +138,8 @@
   </div>
 
 </div>
-<script src="data.js?v=32"></script>
-<script src="app.js?v=32"></script>
+<script src="data.js?v=33"></script>
+<script src="klines.js?v=33"></script>
+<script src="app.js?v=33"></script>
 </body>
 </html>

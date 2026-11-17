@@ -46,6 +46,11 @@ body{display:flex;justify-content:center;overflow:hidden}
 .stats b{font-size:13px;color:var(--w)}
 .logwrap{flex:1;min-height:0;border:1px solid var(--line);border-radius:4px;display:flex;flex-direction:column;background:#000}
 .loghead{font-size:10px;display:flex;justify-content:space-between;padding:4px 8px;border-bottom:1px solid var(--line);color:var(--g)}
+.chartbox{flex-shrink:0;height:118px;display:flex;flex-direction:column;border-bottom:1px solid var(--line);background:#000}
+.chartmeta{font-size:9px;color:var(--dim);letter-spacing:.4px;padding:2px 8px 0;height:14px;line-height:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#logChart{flex:1;width:100%;min-height:0;display:block}
+@media (max-height:740px){.chartbox{height:104px}}
+@media (max-height:680px){.chartbox{height:96px}}
 .log{flex:1;overflow:hidden;font-size:10.5px;line-height:1.55;padding:4px 8px;display:flex;flex-direction:column;justify-content:flex-end}
 .log div{flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .log .t{color:var(--dim)}.log .buy{color:var(--g);font-weight:700}.log .sell{color:var(--r);font-weight:700}
