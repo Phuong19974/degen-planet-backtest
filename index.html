@@ -9,18 +9,34 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Degen Planet">
 <meta name="application-name" content="Degen Planet">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<meta name="description" content="DEGEN PLANET VIP — backtest replay terminal. Historical signals, no real funds.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="DEGEN PLANET VIP · Backtest Terminal">
+<meta property="og:description" content="DEGEN PLANET VIP — backtest replay terminal. Historical signals, no real funds.">
+<meta property="og:image" content="https://phuong19974.github.io/degen-planet-backtest/og-image.png">
+<meta property="og:url" content="https://phuong19974.github.io/degen-planet-backtest/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="DEGEN PLANET VIP · Backtest Terminal">
+<meta name="twitter:description" content="DEGEN PLANET VIP — backtest replay terminal. Historical signals, no real funds.">
+<meta name="twitter:image" content="https://phuong19974.github.io/degen-planet-backtest/og-image.png">
+<link rel="manifest" href="manifest.json?v=27">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=27">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=27">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon.png?v=27">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=27">
+<link rel="shortcut icon" href="favicon.ico?v=27">
 <title>DEGEN PLANET VIP · Backtest Terminal</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22%3E%3Crect width=%2216%22 height=%2216%22 fill=%22%23000%22/%3E%3Ctext x=%223%22 y=%2213%22 font-size=%2213%22 fill=%22%2300ff66%22%3EDP%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=27">
 </head>
 <body>
 <div id="app">
   <!-- BOOT -->
   <section id="boot" class="screen active">
-    <div class="logo"><div class="l1">DEGEN</div><div class="l2">PLANET</div><div class="l3">VIP TRADING TERMINAL · v2.6</div></div>
+    <div class="live-clock boot-clock">Monaco</div>
+    <div class="logo">
+      <img class="boot-logo" src="logo.png?v=27" alt="DEGEN PLANET" width="200" height="200">
+      <div class="l3">VIP TRADING TERMINAL · v2.7</div>
+    </div>
     <div id="bootlines" class="bootlines"></div>
     <div class="progress"><div id="bootbar"></div></div>
     <div id="bootpct" class="dim">0%</div>
@@ -29,8 +45,14 @@
   <!-- DASHBOARD -->
   <section id="dash" class="screen">
     <header class="top">
-      <div class="brand">DEGEN<span class="g">PLANET</span> <span class="vip">VIP</span></div>
-      <div class="status"><span id="dot" class="dot"></span><span id="statusTxt">IDLE</span></div>
+      <div class="brand">
+        <img class="brand-logo" src="logo.png?v=27" alt="" width="36" height="36">
+        <span>DEGEN<span class="g">PLANET</span> <span class="vip">VIP</span></span>
+      </div>
+      <div class="status">
+        <span class="live-clock">Monaco</span>
+        <span class="status-row"><span id="dot" class="dot"></span><span id="statusTxt">IDLE</span></span>
+      </div>
     </header>
     <div class="ticker"><div id="tickerTrack" class="track"></div></div>
     <div class="eqbox">
@@ -110,8 +132,13 @@
       <div class="dim tiny" id="rNote"></div>
     </div>
   </div>
+
+  <button type="button" id="btnMusic" class="music-fab" aria-label="Toggle music" title="Music">
+    <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+    <span class="spk" id="musicIcon">🔇</span>
+  </button>
 </div>
-<script src="data.js"></script>
-<script src="app.js"></script>
+<script src="data.js?v=27"></script>
+<script src="app.js?v=27"></script>
 </body>
 </html>

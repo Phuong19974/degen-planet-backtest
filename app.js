@@ -5,11 +5,17 @@ const TR = window.DP_TRADES.map(r => { const o = {}; K.forEach((k, i) => o[k] = 
 const START = META.start;
 const qs = new URLSearchParams(location.search);
 
-// ---------- formatting (UTC+7) ----------
-const pad = n => String(n).padStart(2, "0");
-const d7 = ms => new Date(ms + 7 * 3600e3);
-const fDT = ms => { const d = d7(ms); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`; };
-const fD = ms => { const d = d7(ms); return `${pad(d.getUTCDate())} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][d.getUTCMonth()]} ${d.getUTCFullYear()}`; };
+// ---------- formatting (Europe/Monaco, auto DST) ----------
+const TZ = "Europe/Monaco";
+const tzParts = (ms, opts) => {
+  const p = {};
+  for (const x of new Intl.DateTimeFormat("en-GB", { timeZone: TZ, hourCycle: "h23", ...opts }).formatToParts(new Date(ms))) {
+    if (x.type !== "literal") p[x.type] = x.value;
+  }
+  return p;
+};
+const fDT = ms => { const p = tzParts(ms, { year:"numeric", month:"2-digit", day:"2-digit", hour:"2-digit", minute:"2-digit" }); return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}`; };
+const fD = ms => { const p = tzParts(ms, { year:"numeric", month:"short", day:"2-digit" }); return `${p.day} ${p.month} ${p.year}`; };
 const money = (v, dp = 2) => (v < 0 ? "-$" : "$") + Math.abs(v).toLocaleString("en-US", { minimumFractionDigits: dp, maximumFractionDigits: dp });
 const smoney = (v, dp = 0) => (v >= 0 ? "+" : "") + money(v, dp);
 const px = v => v >= 100 ? v.toFixed(2) : v >= 1 ? v.toFixed(3) : v >= 0.01 ? v.toFixed(4) : v.toPrecision(4);
@@ -33,7 +39,7 @@ EV.sort((a, b) => a.m - b.m || a.k - b.k);
 
 // ---------- footnote / modal text ----------
 const periodTxt = `${fD(T0)} – ${fD(T1)}`;
-$("foot").textContent = `Backtest replay · ${periodTxt} · ${FULL.n} trades on ${FULL.pairs} Bitunix perps · start ${money(START,0)}, risk 1% (${money(META.risk,0)}) per trade, 0.06% taker fees both sides included · times UTC+7 · Backtest, past results don't guarantee future returns.`;
+$("foot").textContent = `Backtest replay · ${periodTxt} · ${FULL.n} trades on ${FULL.pairs} Bitunix perps · start ${money(START,0)}, risk 1% (${money(META.risk,0)}) per trade, 0.06% taker fees both sides included · times Monaco · Backtest, past results don't guarantee future returns.`;
 $("cPeriod").textContent = periodTxt; $("cStart").textContent = money(START, 0) + " (virtual)"; $("cRisk").textContent = `1% · ${money(META.risk,0)} max loss`;
 
 // ---------- ticker ----------
@@ -200,4 +206,100 @@ else if (scr === "dash") { showDash(); jumpTo(+(qs.get("at") || 0.6)); if (qs.ge
 else if (scr === "recap") { showDash(); jumpTo(1); sim = T1; showRecap(); }
 else if (scr === "bootmid") { boot(false); }
 else { boot(false).then(() => sleep(500)).then(showConnect); }
+})();
+
+// Live Monaco clock + background music (separate from the replay)
+(() => {
+  const TZ = "Europe/Monaco";
+  function tickLive() {
+    const p = {};
+    for (const x of new Intl.DateTimeFormat("en-GB", {
+      timeZone: TZ, hourCycle: "h23",
+      hour: "2-digit", minute: "2-digit", second: "2-digit"
+    }).formatToParts(new Date())) {
+      if (x.type !== "literal") p[x.type] = x.value;
+    }
+    const text = `${p.hour}:${p.minute}:${p.second} Monaco`;
+    document.querySelectorAll(".live-clock").forEach(el => { el.textContent = text; });
+  }
+  tickLive();
+  setInterval(tickLive, 1000);
+
+  const TRACKS = [
+    "audio/tech-house-vibes.mp3",
+    "audio/house-02.mp3",
+    "audio/techno-fest-vibes.mp3"
+  ];
+  const LS = "dp-music";
+  const btn = document.getElementById("btnMusic");
+  const icon = document.getElementById("musicIcon");
+  let audio = null, idx = 0, unlocked = false;
+
+  const wantOn = () => localStorage.getItem(LS) !== "0";
+
+  function ensureAudio() {
+    if (audio) return audio;
+    audio = new Audio();
+    audio.preload = "auto";
+    audio.loop = false;
+    audio.volume = 0.4;
+    audio.playsInline = true;
+    audio.setAttribute("playsinline", "true");
+    audio.setAttribute("webkit-playsinline", "true");
+    audio.src = TRACKS[idx];
+    audio.addEventListener("ended", () => {
+      idx = (idx + 1) % TRACKS.length;
+      audio.src = TRACKS[idx];
+      if (wantOn()) audio.play().catch(() => {});
+    });
+    audio.addEventListener("play", updateUI);
+    audio.addEventListener("pause", updateUI);
+    return audio;
+  }
+
+  function isPlaying() { return !!(audio && !audio.paused && !audio.ended); }
+
+  function updateUI() {
+    const on = isPlaying();
+    if (btn) btn.classList.toggle("on", on);
+    if (icon) icon.textContent = on ? "🔊" : "🔇";
+    if (btn) btn.setAttribute("aria-label", on ? "Mute music" : "Play music");
+  }
+
+  function startIfWanted() {
+    if (!wantOn()) { updateUI(); return; }
+    const a = ensureAudio();
+    const p = a.play();
+    if (p && p.catch) p.catch(() => updateUI());
+    updateUI();
+  }
+
+  function onFirstGesture(ev) {
+    if (unlocked) return;
+    if (ev && ev.target && ev.target.closest && ev.target.closest("#btnMusic")) return;
+    unlocked = true;
+    startIfWanted();
+  }
+
+  if (btn) btn.addEventListener("click", ev => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    unlocked = true;
+    const a = ensureAudio();
+    if (wantOn() && !a.paused) {
+      a.pause();
+      localStorage.setItem(LS, "0");
+    } else {
+      localStorage.setItem(LS, "1");
+      startIfWanted();
+    }
+    updateUI();
+  });
+
+  ["pointerdown", "touchstart", "click", "keydown"].forEach(t =>
+    document.addEventListener(t, onFirstGesture, { capture: true, passive: true }));
+
+  // Preload first track so the first tap can start immediately (iOS PWA).
+  ensureAudio();
+  updateUI();
 })();
