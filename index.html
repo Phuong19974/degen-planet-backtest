@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache">
+<meta http-equiv="Pragma" content="no-cache">
 <meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -19,14 +21,14 @@
 <meta name="twitter:title" content="DEGEN PLANET VIP · Trading Terminal">
 <meta name="twitter:description" content="Degen Planet VIP strategy terminal.">
 <meta name="twitter:image" content="https://phuong19974.github.io/degen-planet-backtest/og-image.png">
-<link rel="manifest" href="manifest.json?v=40">
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=40">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=40">
-<link rel="icon" type="image/png" sizes="48x48" href="favicon.png?v=40">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=40">
-<link rel="shortcut icon" href="favicon.ico?v=40">
+<link rel="manifest" href="manifest.json?v=41">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png?v=41">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=41">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon.png?v=41">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png?v=41">
+<link rel="shortcut icon" href="favicon.ico?v=41">
 <title>DEGEN PLANET VIP · Trading Terminal</title>
-<link rel="stylesheet" href="style.css?v=40">
+<link rel="stylesheet" href="style.css?v=41">
 </head>
 <body>
 <div id="app">
@@ -34,7 +36,7 @@
   <section id="boot" class="screen active">
     <div class="live-clock boot-clock">Monaco</div>
     <div class="logo">
-      <img class="boot-logo" src="logo-trans.png?v=40" alt="DEGEN PLANET" width="200" height="200">
+      <img class="boot-logo" src="logo-trans.png?v=41" alt="DEGEN PLANET" width="200" height="200">
       <div class="l3">VIP TRADING TERMINAL · v2.8</div>
     </div>
     <div id="bootlines" class="bootlines"></div>
@@ -46,7 +48,7 @@
   <section id="dash" class="screen">
     <header class="top">
       <div class="brand">
-        <img class="brand-logo" src="logo-trans.png?v=40" alt="" width="36" height="36">
+        <img class="brand-logo" src="logo-trans.png?v=41" alt="" width="36" height="36">
         <span>DEGEN<span class="g">PLANET</span> <span class="vip">VIP</span></span>
       </div>
       <div class="status">
@@ -99,8 +101,9 @@
     </div>
     <footer class="foot dim" id="foot"></footer>
   </section>
+</div>
 
-  <!-- CONNECT MODAL -->
+  <!-- CONNECT MODAL (direct child of body so iOS Safari cannot composite chart canvases above it) -->
   <div id="connect" class="modal">
     <div class="mbox">
       <div class="mt">&gt; CONNECT EXCHANGE</div>
@@ -136,10 +139,9 @@
     </div>
   </div>
 
-</div>
-<script src="lightweight-charts.js?v=40"></script>
-<script src="data.js?v=40"></script>
-<script src="klines.js?v=40"></script>
-<script src="app.js?v=40"></script>
+<script src="lightweight-charts.js?v=41"></script>
+<script src="data.js?v=41"></script>
+<script src="klines.js?v=41"></script>
+<script src="app.js?v=41"></script>
 </body>
 </html>
