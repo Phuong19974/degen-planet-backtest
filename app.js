@@ -79,12 +79,19 @@ async function boot(fast) {
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 // ---------- connect ----------
-function showConnect() { $("connect").classList.add("show"); }
+
+function setOverlayOpen(on) {
+  document.body.classList.toggle("overlay-open", !!on);
+  const box = $("chartBox");
+  if (box) box.classList.toggle("is-hidden", !!on);
+  if (!on) requestAnimationFrame(() => { resize(); draw(); drawLogChart(true); });
+}
+function showConnect() { setOverlayOpen(true); $("connect").classList.add("show"); }
 $("btnConnect").onclick = async () => {
   const b = $("btnConnect"); if (b.dataset.busy) return; b.dataset.busy = 1;
   for (const s of ["CONNECTING", "CONNECTING.", "CONNECTING..", "CONNECTING..."]) { b.textContent = s; await sleep(280); }
   b.textContent = "CONNECTED ✓"; b.classList.add("done"); await sleep(800);
-  $("connect").classList.remove("show"); showDash(); await sleep(500); start();
+  $("connect").classList.remove("show"); setOverlayOpen(false); showDash(); await sleep(500); start();
 };
 function showDash() { $("boot").classList.remove("active"); $("dash").classList.add("active"); resize(); draw(); drawLogChart(true); }
 
@@ -111,7 +118,7 @@ let S;
 function reset() {
   S = { eq: START, pk: START, ddp: 0, n: 0, w: 0, open: 0, pts: [[T0, START]],
         st: { HTF: { n: 0, w: 0, p: new Set(), pnl: 0 }, RANGE: { n: 0, w: 0, p: new Set(), pnl: 0 } } };
-  sim = T0; playMs = 0; playOrigin = 0; ei = 0; shown = START; $("log").innerHTML = ""; logN = 0; $("recap").classList.remove("show");
+  sim = T0; playMs = 0; playOrigin = 0; ei = 0; shown = START; $("log").innerHTML = ""; logN = 0; $("recap").classList.remove("show"); setOverlayOpen(false);
   chartTrade = null; openStack = []; lastSyncKey = ""; lastChartDraw = 0;
 }
 let logN = 0;
@@ -462,6 +469,7 @@ function showRecap() {
   $("rWorst").textContent = `${smoney(FULL.worst.pnl)} ${FULL.worst.s.replace("USDT","")}`;
   $("rDD").textContent = `${(FULL.ddp * 100).toFixed(1)}% (${money(FULL.dd, 0)})`;
   $("rNote").textContent = `${periodTxt} · 1% risk/trade, fees incl.`;
+  setOverlayOpen(true);
   $("recap").classList.add("show");
 }
 // controls
