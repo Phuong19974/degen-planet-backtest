@@ -1,13 +1,13 @@
 :root{--bg:#000;--g:#00ff66;--g2:#00c853;--r:#ff3b4f;--w:#e8ffe8;--dim:#4f7a5c;--line:#0f2a18;--card:#03100a}
 *{box-sizing:border-box;margin:0;padding:0}
-html,body{background:var(--bg);color:var(--w);font-family:"SF Mono",ui-monospace,Menlo,Consolas,"Roboto Mono","Courier New",monospace;height:100%;-webkit-font-smoothing:antialiased}
+html,body{background:var(--bg);overscroll-behavior:none;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;color:var(--w);font-family:"SF Mono",ui-monospace,Menlo,Consolas,"Roboto Mono","Courier New",monospace;height:100%;-webkit-font-smoothing:antialiased}
 body{display:flex;justify-content:center;overflow:hidden}
 #app{width:100%;max-width:480px;height:100dvh;position:relative;overflow:hidden;background:radial-gradient(ellipse at top,#021a0c 0%,#000 60%)}
 #app:after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,255,102,.035) 0 1px,transparent 1px 3px);z-index:50}
 .g{color:var(--g)}.r{color:var(--r)}.dim{color:var(--dim)}.tiny{font-size:10px;margin-top:10px;text-align:center;line-height:1.4}
 .screen{display:none;height:100%;flex-direction:column}.screen.active{display:flex}
 /* boot */
-#boot{padding:48px 22px;justify-content:center}
+#boot{padding:calc(48px + env(safe-area-inset-top)) calc(22px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(22px + env(safe-area-inset-left));justify-content:center}
 .logo{margin-bottom:30px}.logo .l1,.logo .l2{font-size:46px;font-weight:900;line-height:1;letter-spacing:4px}.logo .l1{color:var(--w)}.logo .l2{color:var(--g);text-shadow:0 0 18px rgba(0,255,102,.7)}.logo .l3{margin-top:10px;font-size:11px;color:var(--dim);letter-spacing:2px}
 .bootlines{white-space:pre;font-size:12.5px;line-height:1.9;min-height:240px}
 .bootlines .ok{color:var(--g)}
@@ -17,7 +17,7 @@ body{display:flex;justify-content:center;overflow:hidden}
 #bootbar{height:100%;width:0;background:var(--g);box-shadow:0 0 10px var(--g)}
 #bootpct{font-size:12px}
 /* dash */
-#dash{padding:10px 12px calc(6px + env(safe-area-inset-bottom));gap:8px}
+#dash{padding:calc(10px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));gap:8px}
 .top{display:flex;justify-content:space-between;align-items:center}
 .brand{font-weight:800;letter-spacing:1px;font-size:16px}.brand .g{margin-left:4px;text-shadow:0 0 8px rgba(0,255,102,.6)}
 .vip{background:var(--g);color:#000;padding:1px 5px;font-size:11px;border-radius:2px;margin-left:4px}
@@ -56,7 +56,7 @@ button,.big{font-family:inherit;background:#000;color:var(--g);border:1px solid 
 .speeds button{padding:7px 8px}.speeds .sel{background:var(--g);color:#000}
 .foot{font-size:8.5px;line-height:1.35;text-align:center}
 /* modals */
-.modal{position:absolute;inset:0;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;z-index:40;padding:18px;backdrop-filter:blur(3px)}
+.modal{position:absolute;inset:0;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;z-index:40;padding:calc(18px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom));backdrop-filter:blur(3px)}
 .modal.show{display:flex;animation:fade .25s}
 @keyframes fade{from{opacity:0;transform:scale(.97)}}
 .mbox{width:100%;max-width:380px;border:1px solid var(--g2);background:#010a05;padding:18px;border-radius:6px;box-shadow:0 0 30px rgba(0,255,102,.18);font-size:13px}
