@@ -8,7 +8,7 @@ body{display:flex;justify-content:center;overflow:hidden}
 .screen{display:none;height:100%;flex-direction:column}.screen.active{display:flex}
 /* boot */
 #boot{padding:calc(48px + env(safe-area-inset-top)) calc(22px + env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) calc(22px + env(safe-area-inset-left));justify-content:center}
-.logo{margin-bottom:22px;text-align:center}.boot-logo{width:200px;height:200px;display:block;margin:0 auto 8px;object-fit:cover;filter:drop-shadow(0 0 22px rgba(201,154,40,.4))}.logo .l3{margin-top:6px;font-size:11px;color:var(--dim);letter-spacing:2px}
+.logo{margin-bottom:22px;text-align:center}.boot-logo{width:200px;height:200px;display:block;margin:0 auto 8px;object-fit:contain;background:transparent;filter:drop-shadow(0 0 10px rgba(0,150,255,.45))}.logo .l3{margin-top:6px;font-size:11px;color:var(--dim);letter-spacing:2px}
 .bootlines{white-space:pre;font-size:12.5px;line-height:1.9;min-height:240px}
 .bootlines .ok{color:var(--g)}
 .cursor:after{content:"█";color:var(--g);animation:blink 1s steps(1) infinite;margin-left:2px}
@@ -76,6 +76,6 @@ button,.big{font-family:inherit;background:#000;color:var(--g);border:1px solid 
 .boot-clock{position:absolute;top:calc(10px + env(safe-area-inset-top));right:calc(16px + env(safe-area-inset-right));z-index:5}
 #boot{position:relative}
 .hero{display:flex;justify-content:center;align-items:center;flex-shrink:0;padding:2px 0 4px}
-.hero-logo{width:120px;height:120px;object-fit:contain;background:#000;display:block;filter:drop-shadow(0 0 16px rgba(201,154,40,.5))}
-@media (max-height:740px){.boot-logo{width:150px;height:150px}.hero-logo{width:88px;height:88px}#chart{height:72px}}
-@media (max-height:680px){.hero-logo{width:72px;height:72px}.equity{font-size:26px}#chart{height:64px}}
+.hero-logo{width:80px;height:80px;object-fit:contain;background:transparent;display:block;filter:drop-shadow(0 0 10px rgba(0,150,255,.45))}
+@media (max-height:740px){.boot-logo{width:150px;height:150px}.hero-logo{width:60px;height:60px}#chart{height:72px}}
+@media (max-height:680px){.hero-logo{width:56px;height:56px}.equity{font-size:26px}#chart{height:64px}}
