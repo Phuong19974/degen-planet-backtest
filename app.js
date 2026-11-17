@@ -89,8 +89,8 @@ $("btnConnect").onclick = async () => {
 function showDash() { $("boot").classList.remove("active"); $("dash").classList.add("active"); resize(); draw(); drawLogChart(true); }
 
 // ---------- replay state ----------
-// ~30s at 1x for the full session (~43ms/trade); 0.5x/2x/4x stay relative.
-const DUR = 30000;
+// ~20s at 1x for the full session (~29ms/trade); 0.5x/2x/4x stay relative.
+const DUR = 20000;
 const KEYS = (() => {
   const out = [], seen = new Set();
   for (const e of EV) { if (!seen.has(e.m)) { seen.add(e.m); out.push(e.m); } }
