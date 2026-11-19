@@ -3,6 +3,24 @@ const $ = id => document.getElementById(id);
 const META = window.DP_META, K = window.DP_KEYS;
 const TR = window.DP_TRADES.map(r => { const o = {}; K.forEach((k, i) => o[k] = r[i]); o.tm = Date.parse(o.t); o.xm = Date.parse(o.x); return o; });
 const START = META.start;
+// Compounding (margin model): each trade uses COMP% of the realized balance at entry as margin at LEV x.
+// Net return on notional per trade is derived from the original fixed-risk sizing (same trades, same exits, fees incl.).
+const COMP = META.comp || 0, LEV = META.lev || 50;
+if (COMP) {
+  const ev = [];
+  TR.forEach(t => {
+    t.pnl0 = t.pnl;
+    const sld = Math.abs(t.e - t.sl) / t.e;
+    t.rn = t.pnl0 / (META.risk / (sld + 2 * META.fee));
+    ev.push([t.tm, 0, t], [t.xm, 1, t]);
+  });
+  ev.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  let bal = START;
+  for (const [, k, t] of ev) {
+    if (k === 0) t.notional = bal * COMP / 100 * LEV;
+    else { t.pnl = t.rn * t.notional; bal += t.pnl; }
+  }
+}
 const qs = new URLSearchParams(location.search);
 
 // ---------- formatting (Europe/Monaco, auto DST) ----------
@@ -39,8 +57,8 @@ EV.sort((a, b) => a.m - b.m || a.k - b.k);
 
 // ---------- footnote / modal text ----------
 const periodTxt = `${fD(T0)} – ${fD(T1)}`;
-$("foot").textContent = `Strategy · ${periodTxt} · ${FULL.n} trades on ${FULL.pairs} Bitunix perps · start ${money(START,0)}, risk 1% (${money(META.risk,0)}) per trade, 0.06% taker fees both sides included · times Monaco.`;
-$("cPeriod").textContent = periodTxt; $("cStart").textContent = money(START, 0); $("cRisk").textContent = `1% · ${money(META.risk,0)} max loss`;
+$("foot").textContent = `Strategy · ${periodTxt} · ${FULL.n} trades on ${FULL.pairs} Bitunix perps · start ${money(START,0)}, ${COMP ? `${COMP}% margin · ${LEV}x · compounding` : `risk 1% (${money(META.risk,0)}) per trade`}, 0.06% taker fees both sides included · times Monaco.`;
+$("cPeriod").textContent = periodTxt; $("cStart").textContent = money(START, 0); $("cRisk").textContent = COMP ? `${COMP}% margin · ${LEV}x · compounding` : `1% · ${money(META.risk,0)} max loss`;
 
 // ---------- ticker ----------
 function renderTicker(list, live) {
@@ -468,7 +486,7 @@ function showRecap() {
   $("rBest").textContent = `${smoney(FULL.best.pnl)} ${FULL.best.s.replace("USDT","")} ${tfL(FULL.best.tf)}`;
   $("rWorst").textContent = `${smoney(FULL.worst.pnl)} ${FULL.worst.s.replace("USDT","")}`;
   $("rDD").textContent = `${(FULL.ddp * 100).toFixed(1)}% (${money(FULL.dd, 0)})`;
-  $("rNote").textContent = `${periodTxt} · 1% risk/trade, fees incl.`;
+  $("rNote").textContent = `${periodTxt} · ${COMP ? `${COMP}% margin · ${LEV}x · compounding` : "1% risk/trade"}, fees incl.`;
   setOverlayOpen(true);
   $("recap").classList.add("show");
 }
